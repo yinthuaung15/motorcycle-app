@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin Panel</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="config.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, sans-serif; background: #0d1117; color: #c9d1d9; padding: 15px; min-height: 100vh; }
+        .header { text-align: center; padding: 15px 0; border-bottom: 1px solid #30363d; margin-bottom: 20px; }
+        .header h1 { font-size: 20px; color: #58a6ff; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 20px; background: #161b22; border-radius: 10px; padding: 4px; }
+        .tab { flex: 1; padding: 10px; text-align: center; border-radius: 8px; cursor: pointer; font-size: 13px; color: #8b949e; }
+        .tab.active { background: #238636; color: white; }
+        .alert { padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 15px; display: none; font-size: 14px; }
+        .alert-success { background: rgba(35,134,54,0.3); color: #3fb950; border: 1px solid #238636; }
+        .alert-error { background: rgba(218,54,51,0.3); color: #f85149; border: 1px solid #da3633; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 13px; color: #8b949e; }
+        .form-group input { width: 100%; padding: 12px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; color: #c9d1d9; font-size: 16px; outline: none; }
+        .form-row { display: flex; gap: 10px; }
+        .form-row .form-group { flex: 1; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: #238636; color: white; }
+        .btn-warning { background: #d2991d; color: black; }
+        .btn-danger { background: #da3633; color: white; }
+        .btn-info { background: #1f6feb; color: white; }
+        .bike-list { display: flex; flex-direction: column; gap: 8px; }
+        .bike-item { background: #161b22; border-radius: 10px; padding: 12px; border-left: 3px solid #58a6ff; }
+        .bike-item .bike-name { font-weight: bold; font-size: 15px; }
+        .bike-item .bike-meta { font-size: 11px; color: #8b949e; margin: 3px 0; }
+        .bike-item .bike-actions { display: flex; gap: 8px; margin-top: 8px; }
+        .bike-item .bike-actions button { flex: 1; padding: 7px; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; }
+        .btn-edit { background: #d2991d; color: black; }
+        .btn-del { background: #da3633; color: white; }
+        .empty-state { text-align: center; padding: 40px; color: #8b949e; }
+        .search-box { background: #161b22; border-radius: 8px; padding: 10px; margin-bottom: 15px; display: flex; gap: 8px; }
+        .search-box input { flex: 1; background: transparent; border: none; color: #c9d1d9; font-size: 14px; outline: none; }
+        .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+        .stat-card { background: #161b22; border-radius: 10px; padding: 12px; text-align: center; }
+        .stat-card .stat-value { font-size: 22px; font-weight: bold; color: #58a6ff; }
+        .stat-card .stat-label { font-size: 11px; color: #8b949e; }
+    </style>
+</head>
+<body>
+    <div class="header"><h1>🔧 Admin Panel</h1><p style="font-size:11px;color:#8b949e;">GitHub Database</p></div>
+    <div class="alert alert-success" id="alertSuccess"></div>
+    <div class="alert alert-error" id="alertError"></div>
+    
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('add')">➕ ထည့်ရန်</div>
+        <div class="tab" onclick="switchTab('edit')">✏️ ပြင်ရန်</div>
+        <div class="tab" onclick="switchTab('list')">📋 စာရင်း</div>
+        <div class="tab" onclick="switchTab('stats')">📊 စာရင်းအင်း</div>
+    </div>
+    
+    <div id="tab-add">
+        <div class="form-group"><label>🏍️ ဆိုင်ကယ်အမည်</label><input type="text" id="addName" placeholder="Wave 125i"></div>
+        <div class="form-group"><label>🏷️ Brand</label><input type="text" id="addBrand" placeholder="Honda"></div>
+        <div class="form-row">
+            <div class="form-group"><label>💰 ဈေးနှုန်း</label><input type="number" id="addPrice" placeholder="2500000"></div>
+            <div class="form-group"><label>📦 လက်ကျန်</label><input type="number" id="addStock" placeholder="10"></div>
+        </div>
+        <div class="form-group"><label>📂 အမျိုးအစား</label><input type="text" id="addCategory" placeholder="Scooter / Sport"></div>
+        <div class="form-group"><label>🖼️ ပုံ URL</label><input type="text" id="addImage" placeholder="https://... (မထည့်လည်းရ)"></div>
+        <button class="btn btn-primary" onclick="addBike()">✅ ထည့်သွင်းမည်</button>
+    </div>
+    
+    <div id="tab-edit" style="display:none;">
+        <div class="form-group"><label>🆔 ID</label><input type="text" id="editId" placeholder="ID ရိုက်ထည့်ပါ" onchange="loadBikeData()"></div>
+        <div id="editForm" style="display:none;">
+            <div class="form-group"><label>🏍️ အမည်</label><input type="text" id="editName"></div>
+            <div class="form-group"><label>🏷️ Brand</label><input type="text" id="editBrand"></div>
+            <div class="form-row">
+                <div class="form-group"><label>💰 ဈေးနှုန်း</label><input type="number" id="editPrice"></div>
+                <div class="form-group"><label>📦 လက်ကျန်</label><input type="number" id="editStock"></div>
+            </div>
+            <div class="form-group"><label>📂 အမျိုးအစား</label><input type="text" id="editCategory"></div>
+            <div class="form-group"><label>🖼️ ပုံ URL</label><input type="text" id="editImage"></div>
+            <button class="btn btn-warning" onclick="updateBike()">💾 သိမ်းဆည်းမည်</button>
+            <button class="btn btn-danger" onclick="deleteBike()">🗑️ ဖျက်မည်</button>
+        </div>
+    </div>
+    
+    <div id="tab-list" style="display:none;">
+        <div class="search-box"><span>🔍</span><input type="text" id="listSearch" placeholder="ရှာဖွေရန်..." oninput="renderAdminList()"></div>
+        <div class="bike-list" id="adminBikeList"></div>
+        <div class="empty-state" id="adminEmpty"><p>📭 မရှိသေးပါ</p></div>
+    </div>
+    
+    <div id="tab-stats" style="display:none;">
+        <div class="stats-row" id="statsRow"></div>
+        <button class="btn btn-info" onclick="loadAllData()">🔄 Refresh</button>
+  </div>
+      <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+        
+        let allBikes = [];
+        let sha = '';
+        
+        function showAlert(type, msg) {
+            document.getElementById('alertSuccess').style.display = 'none';
+            document.getElementById('alertError').style.display = 'none';
+            if (type === 'success') {
+                document.getElementById('alertSuccess').textContent = '✅ ' + msg;
+                document.getElementById('alertSuccess').style.display = 'block';
+                setTimeout(() => document.getElementById('alertSuccess').style.display = 'none', 3000);
+            } else {
+                document.getElementById('alertError').textContent = '❌ ' + msg;
+                document.getElementById('alertError').style.display = 'block';
+            }
+        }
+        
+        async function loadAllData() {
+            try {
+                const res = await fetch(CONFIG.API_URL, {
+                    headers: { 'Authorization': 'token ' + CONFIG.GITHUB_TOKEN }
+                });
+                
+                if (res.ok) {
+                    const apiData = await res.json();
+                    sha = apiData.sha;
+                    const content = JSON.parse(atob(apiData.content));
+                    allBikes = content.motorcycles || [];
+                } else {
+                    const raw = await fetch('https://raw.githubusercontent.com/' + CONFIG.GITHUB_USER + '/' + CONFIG.GITHUB_REPO + '/main/data.json?t=' + Date.now());
+                    const data = await raw.json();
+                    allBikes = data.motorcycles || [];
+                }
+                
+                if (document.getElementById('tab-list').style.display !== 'none') renderAdminList();
+                if (document.getElementById('tab-stats').style.display !== 'none') renderStats();
+            } catch(e) {
+                showAlert('error', 'ဒေတာရယူရန် မအောင်မြင်ပါ');
+            }
+        }
+        
+        async function saveToGitHub(data) {
+            const response = await fetch(CONFIG.API_URL, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': 'token ' + CONFIG.GITHUB_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: 'Update motorcycles',
+                    content: btoa(unescape(encodeURIComponent(JSON.stringify({ motorcycles: data }, null, 2)))),
+                    sha: sha
+                })
+            });
+            if (!response.ok) throw new Error('Save failed');
+            const result = await response.json();
+            sha = result.content.sha;
+        }
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            ['tab-add','tab-edit','tab-list','tab-stats'].forEach(id => document.getElementById(id).style.display='none');
+            const tabs = document.querySelectorAll('.tab');
+            if(tab==='add'){document.getElementById('tab-add').style.display='block';tabs[0].classList.add('active')}
+            else if(tab==='edit'){document.getElementById('tab-edit').style.display='block';tabs[1].classList.add('active')}
+            else if(tab==='list'){document.getElementById('tab-list').style.display='block';tabs[2].classList.add('active');renderAdminList()}
+            else if(tab==='stats'){document.getElementById('tab-stats').style.display='block';tabs[3].classList.add('active');renderStats()}
+        }
+        
+        async function addBike() {
+            const name = document.getElementById('addName').value.trim();
+            const brand = document.getElementById('addBrand').value.trim();
+            const price = parseInt(document.getElementById('addPrice').value);
+            const stock = parseInt(document.getElementById('addStock').value);
+            const category = document.getElementById('addCategory').value.trim();
+            const image = document.getElementById('addImage').value.trim();
+            
+            if(!name||!brand||!price||isNaN(stock)||!category){showAlert('error','အားလုံးဖြည့်ပါ');return}
+            
+            allBikes.push({ id: Date.now().toString(), name, brand, price, stock, category, image, updated_at: new Date().toLocaleString('my-MM') });
+            
+            try {
+                await saveToGitHub(allBikes);
+                showAlert('success', name + ' ထည့်သွင်းပြီး!');
+                ['addName','addBrand','addPrice','addStock','addCategory','addImage'].forEach(id => document.getElementById(id).value='');
+            } catch(e) {
+                showAlert('error', 'သိမ်းဆည်းရန် မအောင်မြင်ပါ');
+                allBikes.pop();
+            }
+        }
+        
+        function loadBikeData() {
+            const id = document.getElementById('editId').value.trim();
+            const bike = allBikes.find(b => b.id === id);
+            if(bike){
+                document.getElementById('editForm').style.display='block';
+                document.getElementById('editName').value=bike.name||'';
+                document.getElementById('editBrand').value=bike.brand||'';
+                document.getElementById('editPrice').value=bike.price||'';
+                document.getElementById('editStock').value=bike.stock||'';
+                document.getElementById('editCategory').value=bike.category||'';
+                document.getElementById('editImage').value=bike.image||'';
+            }else{
+                document.getElementById('editForm').style.display='none';
+                if(id)showAlert('error','မရှိပါ');
+            }
+        }
+        
+        async function updateBike() {
+            const id = document.getElementById('editId').value.trim();
+            const bike = allBikes.find(b => b.id === id);
+            if(!bike){showAlert('error','မရှိပါ');return}
+            
+            bike.name = document.getElementById('editName').value.trim();
+            bike.brand = document.getElementById('editBrand').value.trim();
+            bike.price = parseInt(document.getElementById('editPrice').value);
+            bike.stock = parseInt(document.getElementById('editStock').value);
+            bike.category = document.getElementById('editCategory').value.trim();
+            bike.image = document.getElementById('editImage').value.trim();
+            bike.updated_at = new Date().toLocaleString('my-MM');
+            
+            try {
+                await saveToGitHub(allBikes);
+                showAlert('success', bike.name + ' ပြင်ဆင်ပြီး!');
+            } catch(e) { showAlert('error', 'မအောင်မြင်ပါ'); }
+        }
+        
+        async function deleteBike() {
+            const id = document.getElementById('editId').value.trim();
+            if(!confirm('တကယ်ဖျက်မှာလား?'))return;
+            allBikes = allBikes.filter(b => b.id !== id);
+            try {
+                await saveToGitHub(allBikes);
+                showAlert('success','ဖျက်ပြီး!');
+                document.getElementById('editForm').style.display='none';
+                document.getElementById('editId').value='';
+            } catch(e) { showAlert('error','မအောင်မြင်ပါ');loadAllData(); }
+        }
+        
+        function renderAdminList() {
+            const search = document.getElementById('listSearch').value.toLowerCase();
+            let filtered = search ? allBikes.filter(b => (b.name||'').toLowerCase().includes(search) || (b.brand||'').toLowerCase().includes(search) || b.id.includes(search)) : allBikes;
+            
+            if(filtered.length===0){document.getElementById('adminBikeList').innerHTML='';document.getElementById('adminEmpty').style.display='block';return}
+            document.getElementById('adminEmpty').style.display='none';
+            document.getElementById('adminBikeList').innerHTML = filtered.map(b => 
+                '<div class="bike-item">' +
+                '<div class="bike-name">'+(b.name||'')+'</div>' +
+                '<div class="bike-meta">'+(b.brand||'')+' | 📂 '+(b.category||'')+' | 💰 '+parseInt(b.price||0).toLocaleString()+' | 📦 '+(b.stock||0)+' စီး</div>' +
+                '<div class="bike-meta">🆔 '+b.id+'</div>' +
+                '<div class="bike-actions">' +
+                '<button class="btn-edit" onclick="editFromList(\''+b.id+'\')">✏️</button>' +
+                '<button class="btn-del" onclick="deleteFromList(\''+b.id+'\')">🗑️</button>' +
+                '</div></div>'
+            ).join('');
+        }
+        
+        function editFromList(id){document.getElementById('editId').value=id;loadBikeData();switchTab('edit')}
+        async function deleteFromList(id){
+            if(!confirm('ဖျက်မှာလား?'))return;
+            allBikes = allBikes.filter(b => b.id !== id);
+            try{await saveToGitHub(allBikes);showAlert('success','ဖျက်ပြီး!');renderAdminList()}catch(e){showAlert('error','မအောင်မြင်ပါ');loadAllData()}
+        }
+        
+        function renderStats(){
+            document.getElementById('statsRow').innerHTML =
+                '<div class="stat-card"><div class="stat-value">'+allBikes.length+'</div><div class="stat-label">ဆိုင်ကယ်အမျိုးအစား</div></div>'+
+                '<div class="stat-card"><div class="stat-value">'+allBikes.reduce((s,b)=>s+parseInt(b.stock||0),0)+'</div><div class="stat-label">စုစုပေါင်းလက်ကျန်</div></div>'+
+                '<div class="stat-card"><div class="stat-value">'+allBikes.reduce((s,b)=>s+(parseInt(b.price||0)*parseInt(b.stock||0)),0).toLocaleString()+'</div><div class="stat-label">စုစုပေါင်းတန်ဖိုး</div></div>'+
+                '<div class="stat-card"><div class="stat-value">'+allBikes.filter(b=>parseInt(b.stock||0)===0).length+'</div><div class="stat-label">ကုန်သွားသော</div></div>';
+        }
+        
+        tg.MainButton.setText('🔄 Refresh').show();
+        tg.MainButton.onClick(()=>loadAllData());
+        loadAllData();
+    </script>
+</body>
+</html>
