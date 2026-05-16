@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 # ==================== CONFIGURATION ====================
 # 🔑 ဒီမှာ သင့် Token နဲ့ URL ထည့်ပါ
 
-BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"           # @BotFather မှရတဲ့ Token
-ADMIN_ID = 123456789                         # သင့် Telegram User ID
-GITHUB_PAGES_URL = "https://your-username.github.io/motorcycle-app"  # သင့် GitHub Pages URL
+BOT_TOKEN = "8905943160:AAHvvlE_gbbfHCnW3b5tlrm28yETyX7MHVY"           # @BotFather မှရတဲ့ Token
+ADMIN_ID = 7405946859                         # သင့် Telegram User ID
+GITHUB_PAGES_URL = "https://yinthuaung15.github.io/motorcycle-app/"  # သင့် GitHub Pages URL
 
 # ==================== START COMMAND ====================
 
@@ -129,14 +129,14 @@ def main():
     """Main function - Run the bot"""
     
     # Check configuration
-    if BOT_TOKEN == "YOUR_BOT_TOKEN_HERE":
+    if BOT_TOKEN == "8905943160:AAHvvlE_gbbfHCnW3b5tlrm28yETyX7MHVY":
         print("=" * 50)
         print("❌ BOT_TOKEN ထည့်သွင်းရန် လိုအပ်ပါသည်!")
         print("@BotFather မှ Token ရယူပြီး bot.py ထဲတွင် ထည့်ပါ")
         print("=" * 50)
         return
     
-    if GITHUB_PAGES_URL == "https://your-username.github.io/motorcycle-app":
+    if GITHUB_PAGES_URL == "https://yinthuaung15.github.io/motorcycle-app/":
         print("=" * 50)
         print("⚠️ GITHUB_PAGES_URL ထည့်သွင်းရန် အကြံပြုပါသည်")
         print("GitHub Pages URL ကို bot.py ထဲတွင် ထည့်ပါ")
