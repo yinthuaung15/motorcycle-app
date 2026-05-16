@@ -9,7 +9,7 @@ const CONFIG = {
     GITHUB_REPO: "motorcycle-data",
     
     // GitHub Personal Access Token (ghp_ နဲ့စရမယ်)
-    GITHUB_TOKEN: "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",
+    GITHUB_TOKEN: "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",
     
     // API URL (အလိုလျောက်ဖြစ်မယ် - ပြင်စရာမလိုပါ)
     get API_URL() {
