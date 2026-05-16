@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Motorcycle Price</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="config.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, sans-serif; background: #1a1a2e; color: #fff; padding: 15px; min-height: 100vh; }
+        .header { text-align: center; padding: 20px 0 15px; border-bottom: 1px solid #333; margin-bottom: 15px; }
+        .header h1 { font-size: 22px; color: #00b894; }
+        .header p { font-size: 12px; color: #888; }
+        .search-box { background: #16213e; border-radius: 12px; padding: 12px 15px; margin-bottom: 15px; display: flex; gap: 10px; align-items: center; }
+        .search-box input { flex: 1; background: transparent; border: none; color: #fff; font-size: 16px; outline: none; }
+        .filter-row { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 8px; }
+        .filter-btn { padding: 7px 14px; border-radius: 20px; border: 1px solid #00b894; background: transparent; color: #00b894; font-size: 12px; white-space: nowrap; cursor: pointer; }
+        .filter-btn.active { background: #00b894; color: #fff; }
+        .loading { text-align: center; padding: 50px; color: #888; }
+        .bike-list { display: flex; flex-direction: column; gap: 12px; }
+        .bike-card { background: #16213e; border-radius: 15px; padding: 12px; cursor: pointer; border-left: 4px solid #00b894; display: flex; align-items: center; gap: 12px; }
+        .bike-card:active { transform: scale(0.98); }
+        .bike-card .bike-image { width: 70px; height: 70px; border-radius: 12px; object-fit: cover; background: #0f3460; flex-shrink: 0; }
+        .bike-card .bike-info { flex: 1; min-width: 0; }
+        .bike-card .brand { font-size: 11px; color: #888; text-transform: uppercase; }
+        .bike-card .name { font-size: 16px; font-weight: bold; margin: 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .bike-card .info-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+        .bike-card .price { font-size: 16px; font-weight: bold; color: #00b894; }
+        .bike-card .stock-badge { font-size: 11px; padding: 4px 8px; border-radius: 12px; font-weight: bold; }
+        .stock-yes { background: rgba(0,184,148,0.2); color: #00b894; }
+        .stock-no { background: rgba(255,99,72,0.2); color: #ff6348; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 15px; }
+        .modal-overlay.show { display: flex; }
+        .modal-content { background: #1a1a2e; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; overflow: hidden; border: 1px solid #333; }
+        .modal-content .modal-image { width: 100%; height: 220px; object-fit: cover; background: #0f3460; }
+        .modal-body { padding: 20px 25px 25px; }
+        .modal-body h2 { font-size: 22px; }
+        .modal-brand { color: #888; font-size: 13px; margin: 5px 0 15px; }
+        .modal-price { font-size: 34px; font-weight: bold; color: #00b894; margin: 15px 0; }
+        .modal-stock { font-size: 16px; margin: 10px 0; padding: 8px 20px; border-radius: 25px; display: inline-block; }
+        .modal-id { font-size: 11px; color: #555; margin-top: 10px; }
+        .close-btn { margin-top: 15px; padding: 12px 40px; border-radius: 25px; border: none; background: #00b894; color: #fff; font-size: 16px; cursor: pointer; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #888; display: none; }
+        .empty-state .icon { font-size: 70px; margin-bottom: 15px; }
+        .error-state { text-align: center; padding: 40px 20px; color: #ff6348; display: none; }
+        .error-state button { margin-top: 15px; padding: 10px 25px; background: #00b894; border: none; color: #fff; border-radius: 20px; font-size: 14px; cursor: pointer; }
+        .last-updated { text-align: center; font-size: 10px; color: #444; margin-top: 25px; padding-top: 15px; border-top: 1px solid #222; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🏍️ ဆိုင်ကယ်ဈေးနှုန်း</h1>
+        <p>မော်တော်ဆိုင်ကယ်ဈေးနှုန်းနှင့် လက်ကျန်စာရင်း</p>
+    </div>
+    
+    <div class="search-box">
+        <span>🔍</span>
+        <input type="text" id="searchInput" placeholder="ဆိုင်ကယ်အမည် / Brand ရှာဖွေရန်..." oninput="filterBikes()">
+    </div>
+    
+    <div class="filter-row" id="filterRow"></div>
+    <div class="loading" id="loadingDiv"><p>⏳ ဒေတာများ ရယူနေသည်...</p></div>
+    <div class="bike-list" id="bikeList" style="display:none;"></div>
+    <div class="empty-state" id="emptyState"><div class="icon">📭</div><p>ဆိုင်ကယ်စာရင်း မရှိသေးပါ</p></div>
+    <div class="error-state" id="errorState"><div class="icon">❌</div><p id="errorMessage">ဒေတာရယူရန် မအောင်မြင်ပါ</p><button onclick="loadData()">🔄 ပြန်ကြိုးစားမည်</button></div>
+    <div class="last-updated" id="
