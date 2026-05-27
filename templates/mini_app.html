@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ shop_name }}</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: sans-serif; background: #f5f5f5; padding: 10px; }
+        .header { background: #1a1a2e; color: white; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 15px; }
+        .bike-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .bike-card h3 { color: #1a1a2e; margin-bottom: 5px; }
+        .bike-card .price { font-size: 18px; font-weight: bold; color: #28a745; }
+        .bike-card .stock { font-size: 14px; color: #666; }
+        .buy-btn {
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .features { margin: 10px 0; color: #555; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>🏍️ {{ shop_name }}</h2>
+        <p>Motorcycle များကို အောက်တွင်ကြည့်ရှုနိုင်ပါတယ်</p>
+    </div>
+    
+    <div id="bikes-container">
+        {% for bike in bikes %}
+        <div class="bike-card">
+            <h3>{{ bike.brand }} {{ bike.model }} ({{ bike.year }})</h3>
+            <p>{{ bike.bike_type }} | {{ bike.engine }}</p>
+            <p class="price">{{ "{:,}".format(bike.price) }} Ks</p>
+            <p class="stock">လက်ကျန်: {{ bike.stock }} စီး</p>
+            <div class="features">
+                {% for feature in bike.features[:3] %}
+                • {{ feature }}<br>
+                {% endfor %}
+            </div>
+            <button class="buy-btn" onclick="buyBike({{ bike.id }}, '{{ bike.brand }}', '{{ bike.model }}', {{ bike.price }})">
+                🛒 ဝယ်ယူမည်
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        function buyBike(id, brand, model, price) {
+            tg.showPopup({
+                title: 'အတည်ပြုချက်',
+                message: `${brand} ${model}\nဈေးနှုန်း: ${price.toLocaleString()} Ks\n\nဝယ်ယူမှာသေချာပါသလား?`,
+                buttons: [
+                    {id: 'confirm', type: 'ok', text: 'ဝယ်ယူမည်'},
+                    {id: 'cancel', type: 'cancel', text: 'မဝယ်သေးပါ'}
+                ]
+            }, async (buttonId) => {
+                if (buttonId === 'confirm') {
+                    const user = tg.initDataUnsafe?.user || {};
+                    
+                    const res = await fetch('/api/mini-app/order', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            bike_id: id,
+                            user_id: user.id,
+                            user_name: user.first_name + ' ' + (user.last_name || ''),
+                            username: user.username,
+                            name: user.first_name,
+                            phone: '',
+                            address: '',
+                            payment: 'Cash'
+                        })
+                    });
+                    
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        tg.showAlert('✅ အော်ဒါအတည်ပြုပြီးပါပြီ!\nအော်ဒါနံပါတ်: #' + data.order_id);
+                        tg.close();
+                    } else {
+                        tg.showAlert('❌ မအောင်မြင်ပါ။ ထပ်ကြိုးစားပါ။');
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
